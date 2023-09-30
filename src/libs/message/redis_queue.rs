@@ -4,12 +4,22 @@ use super::Message;
 
 pub struct RedisQueue {
     client: Client,
+    auto_delete_time: Option<u64>
 }
 
-impl MessageQueueStore<String> for RedisQueue {
-    fn new(redis_url: &str) -> Result<Self, String> {
-        let client = Client::open(redis_url).map_err(|e| e.to_string())?;
-        Ok(Self { client })
+pub struct RedisConfig {
+    url: String,
+    password: String,
+    auto_delete_time: Option<u64>
+}
+
+impl MessageQueueStore<RedisConfig> for RedisQueue {
+    fn new(config: &RedisConfig) -> Result<Self, String> {
+        let client = Client::open(&config.url).map_err(|e| e.to_string())?;
+        Ok(Self {
+            client,
+            auto_delete_time: config.auto_delete_time
+        })
     }
 
     fn push_message(&self, message: &Message) -> Result<bool, String> {
@@ -17,6 +27,7 @@ impl MessageQueueStore<String> for RedisQueue {
         let mut con = self.client.get_connection().map_err(|e| e.to_string())?;
 
         con.lpush(&key, message).map_err(|e| e.to_string())?;
+        con.expire(&key, self.auto_delete_time.unwrap_or(0) as usize).map_err(|e| e.to_string())?; // If auto_delete_time is None, then the key will never expire
         Ok(true)
     }
 
