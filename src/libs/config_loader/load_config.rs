@@ -1,5 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 
+const PATH: &str = "./config/config.json";
+
 #[derive(Debug, Serialize, Deserialize)]
 struct Config {
     profile: Profile,
@@ -34,8 +36,6 @@ struct DetailedConfig {
     #[serde(rename = "Auto Delete Time")]
     auto_delete_time: String,
 }
-
-const PATH: &str = "./config/config.json";
 
 pub fn load_config() -> Result<Config,String> {
     let file = std::fs::File::open(PATH).map_err(|e| e.to_string())?;
