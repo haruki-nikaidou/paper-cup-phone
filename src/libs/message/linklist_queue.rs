@@ -1,4 +1,4 @@
-use std::collections::LinkedList;
+use std::collections::{LinkedList, HashMap};
 use crate::libs::message::Message;
 use super::queue_trait::MessageQueueStore;
 
@@ -25,8 +25,7 @@ impl SenderQueue {
 }
 
 pub struct LinkListQueue {
-    sender_a_queue: SenderQueue,
-    sender_b_queue: SenderQueue,
+    hash_map: HashMap<String, SenderQueue>,
 }
 
 enum WhoseSenderIs {
@@ -35,91 +34,47 @@ enum WhoseSenderIs {
     None,
 }
 
-impl LinkListQueue {
-    fn whose_sender_is(&self, sender: String) -> WhoseSenderIs {
-        if self.sender_a_queue.get_sender() == sender {
-            WhoseSenderIs::A
-        } else if self.sender_b_queue.get_sender() == sender {
-            WhoseSenderIs::B
-        } else {
-            WhoseSenderIs::None
-        }
-    }
-}
-
 impl MessageQueueStore<()> for LinkListQueue {
     fn new(config: &()) -> Result<Self, String> where Self: Sized {
         Ok(LinkListQueue {
-            sender_a_queue: SenderQueue::new(),
-            sender_b_queue: SenderQueue::new(),
+            hash_map: HashMap::new(),
         })
     }
 
     fn push_message(&mut self, message: Message) -> Result<bool, String> {
-        let push_to = if self.sender_a_queue.get_sender() == message.sender {
-            "a"
-        } else if self.sender_b_queue.get_sender() == message.sender {
-            "b"
-        } else if !self.sender_a_queue.has_sender() {
-            "a"
-        } else if !self.sender_b_queue.has_sender() {
-            "b"
-        } else {
-            return Err("Unexpected Sender".to_string());
-        };
-        match push_to {
-            "a" => {
-                self.sender_a_queue.set_sender(message.sender.clone());
-                self.sender_a_queue.queue.push_back(message);
-            },
-            "b" => {
-                self.sender_b_queue.set_sender(message.sender.clone());
-                self.sender_b_queue.queue.push_back(message);
-            },
-            _ => return Err("Unexpected Sender".to_string()),
-        }
+        let key = format!("line:{}:{}", message.line_id, message.sender);
+        let mut queue = self.hash_map.entry(key).or_insert(SenderQueue::new());
+        queue.queue.push_back(message);
         Ok(true)
     }
 
     fn pop_all(&mut self, line_id: u16, sender: String) -> Result<Vec<Message>, String> {
-        let pop_from = self.whose_sender_is(sender);
-        match pop_from {
-            WhoseSenderIs::A => {
-                let mut result = Vec::new();
-                while let Some(message) = self.sender_a_queue.queue.pop_front() {
-                    result.push(message);
-                }
-                Ok(result)
-            },
-            WhoseSenderIs::B => {
-                let mut result = Vec::new();
-                while let Some(message) = self.sender_b_queue.queue.pop_front() {
-                    result.push(message);
-                }
-                Ok(result)
-            },
-            WhoseSenderIs::None => Err("Unexpected Sender".to_string()),
+        let key = format!("line:{}:{}", line_id, sender);
+        let mut queue = self.hash_map.entry(key).or_insert(SenderQueue::new());
+        let mut messages: Vec<Message> = Vec::new();
+        while let Some(message) = queue.queue.pop_front() {
+            messages.push(message);
         }
+        Ok(messages)
     }
 
     fn get_head(&self, line_id: u16, sender: String) -> Result<Message, String> {
-        let get_from = self.whose_sender_is(sender);
-        match get_from {
-            WhoseSenderIs::A => {
-                if let Some(&message) = self.sender_a_queue.queue.front() {
-                    Ok(message.clone())
-                } else {
-                    Err("Unexpected Sender".to_string())
+        let key = format!("line:{}:{}", line_id, sender);
+        let queue = self.hash_map.get(&key);
+        match queue {
+            Some(queue) => {
+                let sender = queue.get_sender();
+                let message = queue.queue.front();
+                match message {
+                    Some(message) => Ok(Message {
+                        line_id,
+                        sender,
+                        content: message.content.clone(),
+                    }),
+                    None => Err(format!("No messages in the queue for line: {}, sender: {}", line_id, sender)),
                 }
             },
-            WhoseSenderIs::B => {
-                if let Some(&message) = self.sender_b_queue.queue.front() {
-                    Ok(message.clone())
-                } else {
-                    Err("Unexpected Sender".to_string())
-                }
-            },
-            WhoseSenderIs::None => Err("Unexpected Sender".to_string()),
+            None => Err(format!("No messages in the queue for line: {}, sender: {}", line_id, sender)),
         }
     }
 }
