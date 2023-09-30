@@ -1,0 +1,17 @@
+{
+  "profile": {
+    "Server Name": "My Paper Cup Phone Server",
+    "Server Description": "A server for my friends and I to play on.",
+    "Admin Contact": "admin@example.com",
+    "Server Location": "US"
+  },
+  "Database": {
+    "Type": "Redis",
+    "URL": "redis://localhost:6379",
+    "Password": "password"
+  },
+  "Config": {
+    "Auto Delete": true,
+    "Auto Delete Time": "1w"
+  }
+}
