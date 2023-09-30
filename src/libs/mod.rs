@@ -1,2 +1,2 @@
 pub mod message;
-mod config_loader;
+mod load_config;
