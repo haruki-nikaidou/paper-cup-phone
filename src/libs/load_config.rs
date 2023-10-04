@@ -3,7 +3,7 @@ use serde_derive::{Deserialize, Serialize};
 const PATH: &str = "./config/config.json";
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Config {
+pub struct Config {
     profile: Profile,
     database: Database,
     config: DetailedConfig,
