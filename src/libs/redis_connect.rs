@@ -2,9 +2,8 @@ use std::sync::{Arc, Mutex};
 use redis::{Commands, Client};
 
 pub struct RedisConfig {
-    url: String,
-    password: String,
-    auto_delete_time: Option<u64>
+    pub(crate) url: String,
+    pub(crate) auto_delete_time: Option<u64>
 }
 
 pub struct RedisConnection {
