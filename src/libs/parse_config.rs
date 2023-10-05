@@ -10,7 +10,7 @@ pub struct Config {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Profile {
+pub struct Profile {
     #[serde(rename = "Server Name")]
     server_name: String,
     #[serde(rename = "Server Description")]
@@ -22,7 +22,7 @@ struct Profile {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Database {
+pub(crate) struct Database {
     #[serde(rename = "Type")]
     type_: String,
     url: String,
@@ -30,14 +30,14 @@ struct Database {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct DetailedConfig {
+pub(crate) struct DetailedConfig {
     #[serde(rename = "Auto Delete")]
     auto_delete: bool,
     #[serde(rename = "Auto Delete Time")]
     auto_delete_time: String,
 }
 
-pub fn load_config() -> Result<Config,String> {
+pub fn parse_config() -> Result<Config,String> {
     let file = std::fs::File::open(PATH).map_err(|e| e.to_string())?;
     let config: Config = serde_json::from_reader(file).map_err(|e| e.to_string())?;
     Ok(config)
