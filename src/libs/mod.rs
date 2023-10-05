@@ -1,3 +1,3 @@
 pub mod message;
-mod load_config;
+mod parse_config;
 mod redis_connect;
