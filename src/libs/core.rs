@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use tracing::{info,error};
+use tracing::{info,error,debug};
 use crate::libs::message::redis_queue::RedisQueue;
 
 use super::message::Message;
@@ -56,13 +56,14 @@ impl Core {
         
         // When the sender is already online, return true.
         if self.is_online(sender) {
+            info!("{} is already online, but tried to join again", sender_to_string(sender));
             return Ok(JoinLineResult::Refresh);
         }
 
 
         self.online.insert(sender);
         match self.line_manager.add_sender(sender, line_id) {
-            Ok(AddSenderActuallyDone::AddTheFirstSender) => Ok(true),
+            Ok(AddSenderActuallyDone::AddTheFirstSender) => Ok(JoinLineResult::BeTheFirst),
             Ok(AddSenderActuallyDone::AddTheSecondSender) => {
                 // get the messages from the queue
                 let another_sender = self.line_manager.get_senders(line_id)?[0];
@@ -71,12 +72,13 @@ impl Core {
                         q.pop_all(line_id, another_sender)
                     }
                 };
+                debug!("{} get messages from queue", sender_to_string(sender));
                 match messages {
                     Ok(messages) => Ok(JoinLineResult::BeTheSecond(messages)),
                     Err(e) => {
                         error!("Failed to get messages from queue: {}", e);
                         Err(INTERNAL_SERVER_ERROR)
-                    },
+                    },   
                 }
             },
             Ok(AddSenderActuallyDone::AlreadyInLine) => {
@@ -92,6 +94,7 @@ impl Core {
                         q.pop_all(line_id, another_sender)
                     }
                 };
+                debug!("{} get messages from queue", sender_to_string(sender));
                 match messages {
                     Ok(messages) => Ok(JoinLineResult::Rejoin(messages)),
                     Err(e) => {
@@ -102,6 +105,7 @@ impl Core {
             },
             Ok(AddSenderActuallyDone::TryToAddTheThirdSender) => {
                 // return error
+                info!("{} try to join busy line {}", sender_to_string(sender), line_id);
                 Err(TRY_TO_JOIN_BUSY_LINE)
             },
             Err(e) => {
