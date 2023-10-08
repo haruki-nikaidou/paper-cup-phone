@@ -14,6 +14,13 @@ fn set_ttl_for_key(con: &mut redis::Connection, key: &String, time: u64) -> Resu
     }
 }
 
+pub enum AddSenderActuallyDone {
+    AddTheFirstSender,
+    AddTheSecondSender,
+    TryToAddTheThirdSender,     // failed
+    AlreadyInLine,
+}
+
 impl LineManager {
     pub fn new(config: RedisConnection) -> Result<Self, String> {
         Ok(Self {
@@ -21,7 +28,7 @@ impl LineManager {
             auto_delete_time: config.auto_delete_time
         })
     }
-    pub fn add_sender(&self, sender: String, line_id: u16) -> Result<bool, String> {
+    pub fn add_sender(&self, sender: String, line_id: u16) -> Result<AddSenderActuallyDone, String> {
         let key = format!("sender:{}:line", line_id);
         let mut con = match self.client.lock().unwrap().get_connection() {
             Ok(con) => con,
@@ -44,22 +51,22 @@ impl LineManager {
                     },
                     None => Ok(true),
                 }.expect("Failed to set auto delete time.");
-                Ok(true)
+                Ok(AddSenderActuallyDone::AddTheFirstSender)
             }
             Some(value) => {
                 // Check if sender is in the value.
                 let senders: Vec<&str> = value.split(':').collect();
                 if senders.contains(&sender.as_str()) {
-                    Ok(true)
+                    Ok(AddSenderActuallyDone::AlreadyInLine)
                 } else if senders.len() == 1 {
                     let new_value = format!("{}:{}", value, sender);
                     match con.set::<&String, &String, ()>(&key, &new_value) {
                         Ok(_) => Ok(true),
                         Err(e) => Err(e.to_string()),
                     }.expect("Failed to add sender to line.");
-                    Ok(true)
+                    Ok(AddSenderActuallyDone::AddTheSecondSender)
                 } else {
-                    Ok(true)
+                    Ok(AddSenderActuallyDone::TryToAddTheThirdSender)
                 }
             }
         }

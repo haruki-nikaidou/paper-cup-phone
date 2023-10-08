@@ -10,7 +10,7 @@ const CONFIG_NOT_VALID: &str = "Config is not valid.";
 const FAILED_TO_LOAD_CONFIG: &str = "Failed to load config.";
 const FAILED_TO_CONNECT_TO_DATABASE: &str = "Failed to connect to database.";
 
-enum Queue{
+pub enum Queue{
     Redis(RedisQueue)
 }
 
@@ -22,9 +22,9 @@ enum DatabaseType {
 }
 
 pub struct LoadResult {
-    queue: Queue,
-    line_manager: LineManager,
-    profile: Profile,
+    pub queue: Queue,
+    pub line_manager: LineManager,
+    pub profile: Profile,
 }
 
 pub fn load_config() -> Result<LoadResult, (String, String)> {

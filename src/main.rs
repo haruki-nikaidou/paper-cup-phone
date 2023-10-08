@@ -1,5 +1,6 @@
 mod libs;
 mod route;
+mod actors;
 
 use actix_web::{App, HttpServer, web};
 use route::chat;
