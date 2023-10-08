@@ -87,4 +87,18 @@ impl LineManager {
         }.expect("Failed to set auto delete time.");
         Ok(true)
     }
+
+    pub fn get_senders(&self, line_id: u16) -> Result<Vec<String>, String> {
+        let key = format!("sender:{}:line", line_id);
+        let mut con = match self.client.lock().unwrap().get_connection() {
+            Ok(con) => con,
+            Err(e) => return Err(e.to_string()),
+        };
+
+        let senders: Option<String> = con.get(&key).map_err(|e| e.to_string())?;
+        match senders {
+            Some(senders) => Ok(senders.split(':').map(|s| s.to_string()).collect()),
+            None => Ok(Vec::new()),
+        }
+    }
 }
