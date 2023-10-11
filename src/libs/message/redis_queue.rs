@@ -28,7 +28,7 @@ impl MessageQueueStore<RedisConnection> for RedisQueue {
         Ok(true)
     }
 
-    fn pop_all(&self, line_id: u16, sender: String) -> Result<Vec<Message>, String> {
+    fn pop_all(&self, line_id: u16, sender: &String) -> Result<Vec<Message>, String> {
         let key = format!("line:{}:{}", line_id, sender);
         let mut con = self.client.lock().unwrap().get_connection().map_err(|e| e.to_string())?;
 
@@ -45,7 +45,7 @@ impl MessageQueueStore<RedisConnection> for RedisQueue {
         Ok(messages)
     }
 
-    fn get_head(&self, line_id: u16, sender: String) -> Result<Message, String> {
+    fn get_head(&self, line_id: u16, sender: &String) -> Result<Message, String> {
         let key = format!("line:{}:{}", line_id, sender);
         let mut con = self.client.lock().unwrap().get_connection().map_err(|e| e.to_string())?;
 
@@ -53,7 +53,7 @@ impl MessageQueueStore<RedisConnection> for RedisQueue {
         match head {
             Some(message) => Ok(Message {
                 line_id,
-                sender,
+                sender: sender.clone(),
                 content: message,
             }),
             None => Err(format!("No messages in the queue for line: {}, sender: {}", line_id, sender)),
