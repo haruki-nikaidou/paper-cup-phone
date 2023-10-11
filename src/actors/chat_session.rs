@@ -1,5 +1,7 @@
 use actix::{Actor, StreamHandler};
 use actix_web_actors::ws;
+use tracing::{info,error,debug};
+use crate::libs::ws::parse_request::parse_request;
 
 pub(crate) struct WsChatSession {
     pub(crate) name: Option<String>,
@@ -16,12 +18,16 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                 ctx.pong(&ping);
             }
             Ok(ws::Message::Pong(_)) => {
-                println!("Received pong from {:?}", self.name);
+                debug!("Pong received");
             }
             Ok(ws::Message::Text(text)) => {
-                if let Some(ref name) = self.name {
-                    println!("{}: {}", name, text);
-                }
+                let request = match parse_request(&text) {
+                    Ok(request) => request,
+                    Err(e) => {
+                        error!("Failed to parse request: {}", e);
+                        return;
+                    }
+                };
             }
             _ => {}
         }

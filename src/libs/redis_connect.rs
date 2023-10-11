@@ -1,5 +1,5 @@
 use std::sync::{Arc, Mutex};
-use redis::{Commands, Client};
+use redis::Client;
 
 pub struct RedisConfig {
     pub(crate) url: String,
