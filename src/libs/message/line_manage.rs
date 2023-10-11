@@ -21,6 +21,8 @@ pub enum AddSenderActuallyDone {
     AlreadyInLine,
 }
 
+const TRY_TO_REMOVE_A_SENDER_NOT_EXIST: &str = "Try to remove a sender that not exist.";
+
 impl LineManager {
     pub fn new(config: RedisConnection) -> Result<Self, String> {
         Ok(Self {
@@ -68,9 +70,9 @@ impl LineManager {
                 } else {
                     Ok(AddSenderActuallyDone::TryToAddTheThirdSender)
                 }
-            }
-        }
-    }
+            } // match existing_value -> Some(value)
+        } // match existing_value
+    } // fn add_sender
 
     pub fn refresh_ttl(&self, line_id: u16) -> Result<bool,String> {
         let key = format!("sender:{}:line", line_id);
@@ -86,7 +88,7 @@ impl LineManager {
             None => Ok(true),
         }.expect("Failed to set auto delete time.");
         Ok(true)
-    }
+    } // fn refresh_ttl
 
     pub fn get_senders(&self, line_id: u16) -> Result<Vec<String>, String> {
         let key = format!("sender:{}:line", line_id);
@@ -99,6 +101,28 @@ impl LineManager {
         match senders {
             Some(senders) => Ok(senders.split(':').map(|s| s.to_string()).collect()),
             None => Ok(Vec::new()),
+        }
+    } // fn get_senders
+
+    pub fn remove_sender(&self, sender: String, line_id: u16) -> Result<(),String> {
+        let key = format!("sender:{}:line", line_id);
+        let mut con = match self.client.lock().unwrap().get_connection() {
+            Ok(con) => con,
+            Err(e) => return Err(e.to_string()),
+        };
+
+        let senders: Option<String> = con.get(&key).map_err(|e| e.to_string())?;
+        match senders {
+            Some(senders) => {
+                let new_senders: Vec<String> = senders.split(':').map(|s| s.to_string()).filter(|s| s != &sender).collect();
+                let new_value = new_senders.join(":");
+                match con.set::<&String, &String, ()>(&key, &new_value) {
+                    Ok(_) => Ok(true),
+                    Err(e) => Err(e.to_string()),
+                }.expect("Failed to remove sender from line.");
+                Ok(())
+            },
+            None => Err(TRY_TO_REMOVE_A_SENDER_NOT_EXIST.to_string()),
         }
     }
 }

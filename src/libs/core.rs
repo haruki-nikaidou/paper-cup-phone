@@ -49,7 +49,7 @@ impl Core {
             line_manager: config.line_manager,
             profile: config.profile,
         }
-    }
+    } // fn new
     pub fn join_line(&mut self, sender: Sender, line_id: u16) -> Result<JoinLineResult, String> {
 
 
@@ -115,12 +115,19 @@ impl Core {
                 Err(INTERNAL_SERVER_ERROR.to_string())
             },
         }
-    }
+    } // fn join_line
     pub fn set_offline(&mut self, sender: Sender) {
         info!("{} offline", sender_to_string(sender).unwrap());
         self.online.remove(&sender);
     }
     pub fn is_online(&self, sender: Sender) -> bool {
         self.online.contains(&sender)
+    }
+
+    pub fn exit_line(&mut self, sender: Sender, line_id: u16) -> Result<(),String> {
+        info!("{} exit line {}", sender_to_string(sender).unwrap(), line_id);
+        self.set_offline(sender);
+        let sender = sender_to_string(sender)?;
+        self.line_manager.remove_sender(sender, line_id)
     }
 } // impl Core
