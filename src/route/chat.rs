@@ -6,6 +6,6 @@ pub async fn chat_route(
     req: HttpRequest,
     stream: web::Payload,
 ) -> Result<HttpResponse, Error> {
-    let resp = ws::start(WsChatSession { name: None }, &req, stream);
+    let resp = ws::start(WsChatSession { name: None, core: (), user_id: () }, &req, stream);
     resp
 }
