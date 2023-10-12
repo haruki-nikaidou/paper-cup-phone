@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use redis::{Commands, Client};
 use crate::libs::redis_connect::RedisConnection;
 use super::queue_trait::MessageQueueStore;
-use super::Message;
+use crate::libs::message::Message;
 
 pub struct RedisQueue {
     client: Arc<Mutex<Client>>,

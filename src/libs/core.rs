@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use tracing::{info,error,debug};
 
-use super::message::Message;
+use crate::libs::message::Message;
 use super::message::queue_trait::MessageQueueStore;
 use super::load_config::{Queue, LoadResult};
 use super::message::line_manage::{LineManager, AddSenderActuallyDone};

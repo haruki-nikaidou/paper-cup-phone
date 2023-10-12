@@ -1,10 +1,10 @@
-use std::num::ParseIntError;
-use super::message::queue_trait::MessageQueueStore;
-use super::parse_config::time_str_to_seconds;
 use super::redis_connect::{RedisConfig, RedisConnection};
-use super::message::line_manage::LineManager;
-use super::message::redis_queue::RedisQueue;
-use super::parse_config::{parse_config, Config, Profile};
+use super::message:: {
+    line_manage::LineManager,
+    redis_queue::RedisQueue,
+    queue_trait::MessageQueueStore
+};
+use super::parse_config::{time_str_to_seconds, parse_config, Config, Profile};
 
 const CONFIG_NOT_VALID: &str = "Config is not valid.";
 const FAILED_TO_LOAD_CONFIG: &str = "Failed to load config.";
@@ -87,4 +87,11 @@ pub fn load_config() -> Result<LoadResult, (String, String)> {
         line_manager,
         profile,
     })
+}
+
+pub fn load_profile() -> Result<Profile,String> {
+    match parse_config() {
+        Ok(config) => Ok(config.profile),
+        Err(e) => Err(e.to_string()),
+    }
 }

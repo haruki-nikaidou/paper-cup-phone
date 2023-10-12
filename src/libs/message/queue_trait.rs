@@ -1,4 +1,4 @@
-use super::Message;
+use crate::libs::message::Message;
 
 pub trait MessageQueueStore<Config> {
     fn new(config: &Config) -> Result<Self, String> where Self: Sized;
